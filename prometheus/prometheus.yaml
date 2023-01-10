@@ -1,0 +1,88 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus
+spec:
+  retention: 10d
+  securityContext:
+    fsGroup: 2000
+    runAsNonRoot: true
+    runAsUser: 1000
+  replicas: 1
+  serviceAccountName: prometheus
+  podMonitorSelector:
+    matchLabels:
+      app: prometheus
+  serviceMonitorSelector:
+    matchLabels:
+      app: prometheus
+  resources:
+    requests:
+      memory: 400Mi
+  enableAdminAPI: false
+  additionalScrapeConfigs:
+    name: additional-scrape-config
+    key: additional-scrape-config.yaml
+  externalUrl: http://prometheus-operated.prometheus.svc.cluster.local:9090/
+  # alerting:
+  #   alertmanagers:
+  #     - namespace: prometheus
+  #       name: alertmanager
+  #       port: web
+  # ruleSelector:
+  #   matchLabels:
+  #     role: prometheus-alert
+  storage:
+    volumeClaimTemplate:
+      metadata:
+        name: prometheus-pvc
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 16Gi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+rules:
+  - apiGroups: ['']
+    resources:
+      - nodes
+      - nodes/proxy
+      - nodes/metrics
+      - services
+      - endpoints
+      - pods
+    verbs: ['get', 'list', 'watch']
+  - apiGroups: ['']
+    resources:
+      - configmaps
+    verbs: ['get']
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs: ['get', 'list', 'watch']
+  - nonResourceURLs: ['/metrics']
+    verbs: ['get']
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: prometheus

@@ -1,0 +1,6 @@
+namespace: node-exporter
+
+resources:
+  - ./node-exporter-ns.yaml
+  - ./node-exporter.yaml
+  - ./node-exporter-svc.yaml

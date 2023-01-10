@@ -1,0 +1,38 @@
+- hosts: master:vm0
+  vars:
+    arch: aarch64
+  become: true
+  tasks:
+    - name: Download the Google Cloud public signing key
+      get_url:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        dest: /etc/apt/keyrings/kubernetes-archive-keyring.gpg
+
+    - name: Add the Kubernetes apt repository
+      apt_repository:
+        repo: deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main
+        state: present
+        filename: kubernetes.list
+
+    - name: Update apt package index, install kubelet, kubeadm and kubectl
+      apt:
+        name: '{{ packages }}'
+        state: present
+        update_cache: yes
+        allow_change_held_packages: yes
+      vars:
+        packages:
+          - kubelet
+          - kubeadm
+          - kubectl
+
+    - name: Hold package update
+      shell:
+        cmd: 'apt-mark hold kubelet kubeadm kubectl'
+
+    - name: Reload kubelet service
+      systemd:
+        daemon_reload: yes
+
+    - name: Start kubelet service
+      service: name=kubelet state=started enabled=yes

@@ -1,0 +1,7 @@
+- hosts: master:vm0
+  vars:
+    cri_socket: unix:///var/run/crio/crio.sock
+  become: true
+  tasks:
+    - name: Reset the Kubernetes cluster using kubeadm
+      command: kubeadm reset -f --cri-socket {{ cri_socket }}

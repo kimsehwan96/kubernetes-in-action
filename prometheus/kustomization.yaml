@@ -1,0 +1,17 @@
+namespace: prometheus
+
+resources:
+  - https://raw.githubusercontent.com/prometheus-operator/prometheus-operator/v0.59.2/bundle.yaml
+  - ./prometheus-ns.yaml
+  - ./prometheus.yaml
+  - ./prometheus-np.yaml
+  - ./prometheus-node-exporter.yaml
+  - ./prometheus-kube-state-metric.yaml
+
+secretGenerator:
+  - name: additional-scrape-config
+    files:
+      - additional-scrape-config.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true

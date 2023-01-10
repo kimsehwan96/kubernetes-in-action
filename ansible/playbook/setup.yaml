@@ -1,0 +1,89 @@
+- name: Set hostname
+  hostname:
+    name: '{{ hostname }}'
+
+- name: Add hostname
+  lineinfile:
+    path: /etc/hosts
+    regexp: '{{ ansible_node }}'
+    line: '{{ ansible_node }} {{ hostname }}.cluster.local {{ hostname }}'
+    create: yes
+  when: ansible_node is defined
+
+- name: Add hostname
+  lineinfile:
+    path: /etc/hosts
+    regexp: '{{ hostip }}'
+    line: '{{ hostip }} {{ hostname }}.cluster.local {{ hostname }}'
+    create: yes
+  when: ansible_node is not defined
+
+- name: Configure node ip
+  lineinfile:
+    path: /etc/default/kubelet
+    line: KUBELET_EXTRA_ARGS=--node-ip={{ ansible_node }}
+    regexp: KUBELET_EXTRA_ARGS=
+    create: yes
+  when: ansible_node is defined
+
+- name: Configure node ip
+  lineinfile:
+    path: /etc/default/kubelet
+    line: KUBELET_EXTRA_ARGS=--node-ip={{ hostip }}
+    regexp: KUBELET_EXTRA_ARGS=
+    create: yes
+  when: ansible_node is not defined
+
+- name: Unmount block devices
+  mount:
+    path: '/opt/{{ item }}'
+    src: '/dev/{{ item }}'
+    state: absent
+  ignore_errors: yes
+  with_items:
+    - '{{ k8s_delete_blkdevices }}'
+    - '{{ k8s_format_blkdevices }}'
+  when: k8s_delete_blkdevices is defined or k8s_format_blkdevices is defined
+
+- name: Delete block devices
+  shell: |
+    parted "/dev/{{ item }}" -s mklabel gpt
+    wipefs --all --force "/dev/{{ item }}"
+  with_items:
+    - '{{ k8s_delete_blkdevices }}'
+  notify: Reboot
+  when: k8s_delete_blkdevices is defined
+
+- name: Delete directories
+  file:
+    path: '{{ item }}'
+    state: absent
+  with_items:
+    - '{{ k8s_delete_directories }}'
+  when: k8s_delete_directories is defined
+
+- name: Creates directories
+  file:
+    path: '{{ item }}'
+    state: directory
+  with_items:
+    - '{{ k8s_create_directories }}'
+  when: k8s_create_directories is defined
+
+- name: Format block devices
+  shell: |
+    parted "/dev/{{ item }}" -s mklabel gpt
+    mkfs.ext4 -F "/dev/{{ item }}"
+  with_items:
+    - '{{ k8s_format_blkdevices }}'
+  when: k8s_format_blkdevices is defined
+
+- name: Mount block devices
+  mount:
+    path: '/opt/{{ item }}'
+    src: '/dev/{{ item }}'
+    fstype: ext4
+    state: mounted
+  with_items:
+    - '{{ k8s_format_blkdevices }}'
+  when: k8s_format_blkdevices is defined

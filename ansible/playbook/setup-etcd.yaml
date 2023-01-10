@@ -1,0 +1,14 @@
+- name: Make the etcd directory
+  file:
+    path: /etc/kubernetes/pki/etcd
+    state: directory
+    mode: 0755
+
+- name: Copy the etcd ca.crt to server location
+  copy: src={{ k8s_etcd_ca_crt }} dest=/etc/kubernetes/pki/etcd/ca.crt mode=0644
+
+- name: Copy the apiserver-etcd-client.crt to server location
+  copy: src={{ k8s_etcd_apiserver_crt }} dest=/etc/kubernetes/pki/apiserver-etcd-client.crt mode=0644
+
+- name: Copy the apiserver-etcd-client.key to server location
+  copy: src={{ k8s_etcd_apiserver_key }} dest=/etc/kubernetes/pki/apiserver-etcd-client.key mode=0644

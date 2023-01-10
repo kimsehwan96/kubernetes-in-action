@@ -1,0 +1,16 @@
+namespace: grafana
+
+resources:
+  - ./grafana-ns.yaml
+  - ./grafana.yaml
+  - ./grafana-datasources.yaml
+  - ./grafana-svc.yaml
+
+
+configMapGenerator:
+  - name: grafana-ini
+    files:
+      - grafana.ini
+
+generatorOptions:
+  disableNameSuffixHash: true

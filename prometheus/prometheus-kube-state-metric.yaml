@@ -1,0 +1,62 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kube-state-metrics-exporter
+  labels:
+    app: prometheus
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube-state-metrics
+  namespaceSelector:
+    matchNames:
+      - kube-state-metrics
+  endpoints:
+    - interval: 30s
+      port: http-metrics
+      path: /metrics
+      relabelings:
+        - sourceLabels: [exported_namespace]
+          separator: ;
+          regex: (.*)
+          targetLabel: namespace
+          replacement: $1
+          action: replace
+        - sourceLabels: [exported_pod]
+          separator: ;
+          regex: (.*)
+          targetLabel: pod
+          replacement: $1
+          action: replace
+        - sourceLabels: [exported_container]
+          separator: ;
+          regex: (.*)
+          targetLabel: container
+          replacement: $1
+          action: replace
+      metricRelabelings:
+        - sourceLabels: [__name__]
+          separator: ;
+          regex: kube_configmap_.*
+          replacement: $1
+          action: drop
+        - sourceLabels: [__name__]
+          separator: ;
+          regex: kube_endpoint_.*
+          replacement: $1
+          action: drop
+        - sourceLabels: [__name__]
+          separator: ;
+          regex: kube_ingress_.*
+          replacement: $1
+          action: drop
+        - sourceLabels: [__name__]
+          separator: ;
+          regex: kube_secret.*
+          replacement: $1
+          action: drop
+        - sourceLabels: [__name__]
+          separator: ;
+          regex: kube_service.*
+          replacement: $1
+          action: drop

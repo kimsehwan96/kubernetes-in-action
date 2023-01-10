@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app.kubernetes.io/component: exporter
+    app.kubernetes.io/name: node-exporter
+  name: node-exporter
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: exporter
+      app.kubernetes.io/name: node-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: exporter
+        app.kubernetes.io/name: node-exporter
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/node-exporter: unconfined
+    spec:
+      containers:
+        - name: node-exporter
+          image: prom/node-exporter:v1.4.0
+          args:
+            - --path.procfs=/host/proc
+            - --path.sysfs=/host/sys
+            - --path.rootfs=/host/root
+            - --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/pods/.+)($|/)
+            - --collector.processes
+            - --collector.interrupts
+            - --collector.systemd
+          ports:
+            - containerPort: 9100
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /host/proc
+              mountPropagation: HostToContainer
+              name: proc
+            - mountPath: /host/sys
+              mountPropagation: HostToContainer
+              name: sys
+              readOnly: true
+            - mountPath: /host/root
+              mountPropagation: HostToContainer
+              name: root
+              readOnly: true
+            - mountPath: /var/run/dbus/system_bus_socket
+              mountPropagation: HostToContainer
+              name: system-dbus-socket
+              readOnly: true
+      volumes:
+        - hostPath:
+            path: /proc
+          name: proc
+        - hostPath:
+            path: /sys
+          name: sys
+        - hostPath:
+            path: /
+          name: root
+        - hostPath:
+            path: /var/run/dbus/system_bus_socket
+          name: system-dbus-socket
