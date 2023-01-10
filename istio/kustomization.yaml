@@ -1,0 +1,17 @@
+namespace: istio-system
+
+resources:
+  - ./istio-ns.yaml
+  - ./istio-ingressclass.yaml
+  - ./istio.yaml
+
+helmCharts:
+  - name: kiali-server
+    includeCRDs: true
+    repo: https://kiali.org/helm-charts
+    releaseName: kiali-server
+    version: 1.30.0
+    valuesInline:
+      istio_namespace: istio-system
+      auth:
+        strategy: anonymous
